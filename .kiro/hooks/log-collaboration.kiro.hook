@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Log Collaboration Context",
+  "description": "Appends a concise summary of each prompt, product decision, and modified files to docs/collaboration-log.md",
+  "version": "1",
+  "when": {
+    "type": "agentStop"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Append a concise Markdown entry to docs/collaboration-log.md summarizing: (1) the user's intent in this turn, (2) key product or architectural decisions made, and (3) files created or updated. Keep the entry under 6 bullet points and do not use em dashes."
+  }
+}
