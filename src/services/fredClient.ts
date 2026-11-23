@@ -5,7 +5,7 @@
  * and 3-second timeout using AbortController.
  */
 
-import type { BenchmarkRateResult, FredObservation, FredApiResponse, SessionCacheEntry } from '../engine/types';
+import type { BenchmarkRateResult, FredApiResponse, SessionCacheEntry } from '../engine/types';
 import { RateSource } from '../engine/types';
 
 // ============================================================================

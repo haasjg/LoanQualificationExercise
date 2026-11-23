@@ -40,6 +40,91 @@ export enum RateSource {
 }
 
 // ============================================================================
+// Phase 2: Post-Denial Conversion Enums
+// ============================================================================
+
+export enum RetentionProductType {
+  SECURED_CREDIT_BUILDER = 'SECURED_CREDIT_BUILDER',
+  HIGH_YIELD_SAVINGS = 'HIGH_YIELD_SAVINGS',
+  MICRO_LOAN = 'MICRO_LOAN',
+  DEBT_CONSOLIDATION = 'DEBT_CONSOLIDATION',
+}
+
+/**
+ * Tracks the status of a single milestone in a retention plan.
+ * Milestones represent concrete steps the applicant must complete
+ * (e.g., "Pay down $200 in monthly debt", "Reach credit score 640").
+ */
+export interface MilestoneStatus {
+  milestoneId: string;
+  label: string;
+  completed: boolean;
+  completedAt: string | null; // ISO 8601 timestamp
+}
+
+/**
+ * Captures the initial state when an applicant accepts a retention product offer.
+ * Preserves baseline metrics and decision context for progress tracking and reporting.
+ */
+export interface ActivePlan {
+  productType: RetentionProductType;
+  acceptedAt: string; // ISO 8601 timestamp
+  initialInputs: ApplicantInputs;
+  initialEngineResult: EngineResult;
+}
+
+/**
+ * Tracks the applicant's progress toward loan qualification after accepting
+ * a retention product. Stores updated inputs and milestone completion state.
+ */
+export interface ProgressState {
+  milestones: MilestoneStatus[];
+  updatedInputs: ApplicantInputs;
+  lastUpdated: string; // ISO 8601 timestamp
+}
+
+/**
+ * Represents a recommended financial product for declined applicants.
+ * Each recommendation includes product details, qualification gap analysis,
+ * timeline estimates, and key terms.
+ * 
+ * @property productType - Type of retention product being recommended
+ * @property productName - Human-readable product name (e.g., "Secured Credit Builder Card")
+ * @property productIcon - Lucide React icon name (e.g., "CreditCard", "PiggyBank")
+ * @property qualificationGap - Plain English description of what's preventing approval
+ * @property timelineMonths - Estimated months needed to close the qualification gap
+ * @property timelineLabel - Human-readable timeline range (e.g., "6-9 months")
+ * @property keyTerms - Array of bullet points describing product features/benefits
+ * @property gapMetrics - Current vs. target metrics with label
+ */
+export interface ProductRecommendation {
+  productType: RetentionProductType;
+  productName: string;
+  productIcon: string;
+  qualificationGap: string;
+  timelineMonths: number;
+  timelineLabel: string;
+  keyTerms: string[];
+  gapMetrics: {
+    current: number;
+    target: number;
+    label: string;
+  };
+}
+
+/**
+ * Result of product recommendation analysis for declined applicants.
+ * Contains an array of recommended products or an empty message if no recommendations available.
+ * 
+ * @property recommendations - Array of product recommendations (empty if none available)
+ * @property emptyMessage - Non-null message only when recommendations array is empty
+ */
+export interface ProductRecommendationResult {
+  recommendations: ProductRecommendation[];
+  emptyMessage: string | null;
+}
+
+// ============================================================================
 // 2.2 ApplicantInputs interface and defaults
 // ============================================================================
 
@@ -229,3 +314,37 @@ export interface SessionCacheEntry {
   fetchedAt: string;
   referenceLabel: string;
 }
+
+// ============================================================================
+// 2.7 Wizard state types (Phase 2 UX Refinement)
+// ============================================================================
+
+export interface LoanRequest {
+  amount: number;
+  term: number;
+}
+
+export interface FinancialInputs {
+  monthlyIncome: number;
+  monthlyDebt: number;
+  creditScore: number;
+}
+
+export interface ComparisonState {
+  timestamp: number;
+  originalInputs: ApplicantInputs;
+  originalEstimate: EngineResult;
+  alternativeInputs: ApplicantInputs;
+  alternativeEstimate: EngineResult;
+}
+
+export const DEFAULT_LOAN_REQUEST: LoanRequest = {
+  amount: 10000,
+  term: 36,
+};
+
+export const DEFAULT_FINANCIAL_INPUTS: FinancialInputs = {
+  monthlyIncome: 5000,
+  monthlyDebt: 500,
+  creditScore: 650,
+};

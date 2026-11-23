@@ -123,10 +123,10 @@ describe('DecisionBanner', () => {
         <DecisionBanner engineResult={createEngineResult({ decision: Decision.APPROVED })} onOpenAdverseModal={vi.fn()} inputs={createInputs()} />,
       );
 
-      const wrapper = container.querySelector('div.bg-green-50');
+      const wrapper = container.querySelector('div.bg-emerald-50');
       expect(wrapper).toBeTruthy();
-      expect(wrapper?.className).toContain('bg-green-50');
-      expect(wrapper?.className).toContain('border-green-200');
+      expect(wrapper?.className).toContain('bg-emerald-50');
+      expect(wrapper?.className).toContain('border-emerald-200');
     });
   });
 
@@ -309,10 +309,10 @@ describe('DecisionBanner', () => {
         <DecisionBanner engineResult={createEngineResult({ decision: Decision.DECLINED })} onOpenAdverseModal={vi.fn()} inputs={createInputs()} />,
       );
 
-      const wrapper = container.querySelector('div.bg-red-50');
+      const wrapper = container.querySelector('div.bg-rose-50');
       expect(wrapper).toBeTruthy();
-      expect(wrapper?.className).toContain('bg-red-50');
-      expect(wrapper?.className).toContain('border-red-200');
+      expect(wrapper?.className).toContain('bg-rose-50');
+      expect(wrapper?.className).toContain('border-rose-200');
     });
   });
 
@@ -355,7 +355,7 @@ describe('DecisionBanner', () => {
       const wrapper = container.querySelector('div.bg-white');
       expect(wrapper).toBeTruthy();
       expect(wrapper?.className).toContain('bg-white');
-      expect(wrapper?.className).toContain('border-gray-200');
+      expect(wrapper?.className).toContain('border-slate-200');
     });
   });
 
@@ -410,10 +410,10 @@ describe('DecisionBanner', () => {
       );
 
       // Find the wrapper div that contains the banner
-      const wrapper = container.querySelector('div.bg-red-50');
+      const wrapper = container.querySelector('div.bg-rose-50');
       expect(wrapper).toBeTruthy();
-      expect(wrapper?.className).toContain('bg-red-50');
-      expect(wrapper?.className).toContain('border-red-200');
+      expect(wrapper?.className).toContain('bg-rose-50');
+      expect(wrapper?.className).toContain('border-rose-200');
     });
   });
 });

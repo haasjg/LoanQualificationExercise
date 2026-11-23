@@ -28,6 +28,14 @@ The primary end users are near-prime and credit-thin borrowers seeking transpare
 - **PathToYesChecklist**: The UI component that renders Lever cards with "Apply This Fix" buttons.
 - **DecisionBanner**: The UI component that renders the Decision outcome with status color and summary text.
 - **LeverOutcome**: The projected Decision that results from applying a single Lever in isolation to the current ApplicantInputs, without any other changes. One of `APPROVED` or `COUNTER_OFFER`.
+- **ProductMapper**: The pure TypeScript module in `src/engine/` that maps decline reason codes to retention product recommendations.
+- **RetentionProduct**: One of four product types offered to declined applicants: `SECURED_CREDIT_BUILDER`, `HIGH_YIELD_SAVINGS`, `MICRO_LOAN`, `DEBT_CONSOLIDATION`.
+- **ProductRecommendation**: A structured payload describing a single retention product offer, including product type, qualification gap, timeline estimate, key terms, and accept action.
+- **ConversionView**: The UI component that replaces the DecisionBanner for DECLINED decisions, displaying decline reasons with exact numbers and 1-3 product offer cards.
+- **ProgressTracker**: The UI component that displays the Personal Progress Tracker Dashboard for users with an active Path to Yes plan.
+- **ActivePlan**: The localStorage-persisted record of a user's accepted retention product, including product type, acceptance timestamp, and initial applicant inputs.
+- **ProgressState**: The localStorage-persisted record of milestone completion, updated financial inputs, and last update timestamp for an active Path to Yes plan.
+- **Milestone**: A single step in a product-specific checklist (e.g., "Make first on-time payment"), with completion status and optional completion date.
 
 ---
 
@@ -200,3 +208,188 @@ The primary end users are near-prime and credit-thin borrowers seeking transpare
 5. THE FRED_Client SHALL expose a mockable interface so that Vitest tests can inject a fixed Benchmark_Rate without network calls.
 6. FOR ALL Solver levers (Extend Term, Reduce Loan Amount, Pay Down Debt), THE Solver SHALL be verified by Vitest unit tests covering at minimum: a case where the lever fully satisfies the target DTI, a case where the lever partially satisfies the target DTI, and a case where the lever is inapplicable.
 7. FOR ALL Levers returned by the Solver, THE Solver SHALL be verified by Vitest unit tests that assert the `leverOutcome` field equals the Decision produced by running the Underwriting_Engine with the Lever's payload applied, covering at minimum one case where `leverOutcome` is `APPROVED` and one case where `leverOutcome` is `COUNTER_OFFER`.
+
+---
+
+### Requirement 11: Decline-Reason-to-Product Mapping
+
+**User Story:** As a declined applicant, I want to see specific financial products I qualify for today that directly address my denial reasons, so that I have a concrete path forward rather than a dead end.
+
+#### Acceptance Criteria
+
+1. WHEN the Decision is `DECLINED`, THE ProductMapper SHALL identify all matching decline reason codes from the EngineResult and map each to one or more retention products from the catalog: `SECURED_CREDIT_BUILDER`, `HIGH_YIELD_SAVINGS`, `MICRO_LOAN`, `DEBT_CONSOLIDATION`.
+2. FOR each decline reason code, THE ProductMapper SHALL return exactly one product recommendation:
+   - `HIGH_RISK_SCORE` (credit score < 600) -> `SECURED_CREDIT_BUILDER`
+   - `INSUFFICIENT_INCOME` (monthly income < $1,800) -> `HIGH_YIELD_SAVINGS` with direct deposit onboarding
+   - `EXCESSIVE_DEBT` (monthlyDebt >= monthlyIncome) -> `DEBT_CONSOLIDATION` with estimated new DTI
+   - `HIGH_DTI` (postLoanDTI > 0.45) -> `DEBT_CONSOLIDATION` or `MICRO_LOAN` depending on requested amount
+3. EACH product recommendation SHALL include: product type, qualification math showing exact gap closure (e.g., "Build credit from 570 to 640 in 6-9 months with on-time payments"), estimated timeline to re-qualification, and a one-click accept action.
+4. THE ProductMapper SHALL compute estimated timeline to re-qualification for each product: `SECURED_CREDIT_BUILDER` (6-9 months for +70 score points), `HIGH_YIELD_SAVINGS` with direct deposit (3 months to show deposit history pattern), `MICRO_LOAN` (immediate approval at reduced amount), `DEBT_CONSOLIDATION` (immediate DTI improvement if consolidation reduces total payment).
+5. WHEN multiple products are recommended, THE ProductMapper SHALL rank products by fastest timeline to main loan re-qualification, with ties broken by lowest out-of-pocket cash required.
+6. THE ProductMapper SHALL be implemented as a pure TypeScript function in `src/engine/productMapper.ts` with zero React imports, accepting `EngineResult` and `ApplicantInputs` and returning a `ProductRecommendationResult`.
+
+---
+
+### Requirement 12: Interactive Path to Yes Offer Cards
+
+**User Story:** As a declined applicant, I want to see why I was declined (with exact numbers) and 1-3 tailored product offers I qualify for today, so that I understand my situation and can take action immediately.
+
+#### Acceptance Criteria
+
+1. WHEN the Decision is `DECLINED`, THE ConversionView SHALL replace the standard decline banner with a constructive conversion screen displaying: (a) the specific metric that caused the decline with exact current and target values (e.g., "Your DTI is 48%, target is 36%"), (b) 1-3 product offer cards ranked by timeline to re-qualification, and (c) a prominent "Accept & Start Plan" button on each card.
+2. EACH product offer card SHALL display: product name and type, visual icon representing the product category, qualification gap explanation (e.g., "Builds credit history with secured deposit"), exact timeline estimate (e.g., "6-9 months to re-qualify"), key product terms (e.g., "$200 minimum deposit, 0% APR builder card"), and a single-action CTA button ("Accept & Start Plan").
+3. WHEN a user clicks "Accept & Start Plan" on a product offer card, THE Simulator SHALL: (a) store the accepted product and timestamp in localStorage under key `pathToYesActivePlan`, (b) transition to the Personal Progress Tracker Dashboard, and (c) initialize milestone checklist state tied to the accepted product.
+4. THE ConversionView SHALL display a summary of why each specific metric failed: for `HIGH_DTI`, show `(monthlyDebt + estimatedPayment) / monthlyIncome` with actual values; for `HIGH_RISK_SCORE`, show current credit score vs. minimum 600; for `INSUFFICIENT_INCOME`, show current monthly income vs. minimum $1,800; for `EXCESSIVE_DEBT`, show `monthlyDebt / monthlyIncome` ratio.
+5. THE ConversionView SHALL be rendered in place of the DecisionBanner when Decision is `DECLINED` and SHALL NOT require opening a separate modal. The AdverseActionModal remains available as a secondary "View Full Details" option.
+6. THE ConversionView SHALL include a "Return to Simulator" button that exits the conversion flow and returns to standard ApplicantInputPanel editing mode without accepting a product.
+
+---
+
+### Requirement 13: Personal Progress Tracker Dashboard
+
+**User Story:** As an applicant who accepted a Path to Yes product, I want to track my progress toward re-qualification with a persistent dashboard showing current vs. target metrics, milestones, and estimated timeline, so that I stay motivated and know when to re-apply.
+
+#### Acceptance Criteria
+
+1. WHEN a user has an active Path to Yes plan stored in localStorage, THE ProgressTracker SHALL load the plan on application mount and display the Personal Progress Tracker Dashboard as the primary view, replacing the standard ApplicantInputPanel and DecisionBanner.
+2. THE ProgressTracker SHALL display: (a) the accepted product name and icon, (b) a visual progress bar or radial chart showing overall completion percentage, (c) current vs. target values for each relevant qualification metric (e.g., "Credit Score: 570 / 640", "DTI: 48% / 36%"), (d) a step-by-step milestone checklist tied to the accepted product, (e) estimated time remaining to re-qualification, and (f) a "Re-Evaluate Eligibility" button that re-runs the underwriting engine with updated inputs.
+3. THE ProgressTracker milestone checklist SHALL be product-specific: for `SECURED_CREDIT_BUILDER`, milestones include "Open secured card account", "Make first on-time payment", "Complete 3 months on-time payments", "Complete 6 months on-time payments"; for `HIGH_YIELD_SAVINGS`, milestones include "Open high-yield savings account", "Set up direct deposit", "Maintain direct deposit for 3 months"; for `MICRO_LOAN`, milestones include "Accept micro-loan offer", "Make first payment", "Complete loan term"; for `DEBT_CONSOLIDATION`, milestones include "Accept consolidation offer", "Close consolidated accounts", "Verify reduced DTI".
+4. THE ProgressTracker SHALL provide simulated progress controls for demo purposes: each milestone in the checklist SHALL have a checkbox that the user can toggle to mark completion; WHEN a milestone is marked complete, THE ProgressTracker SHALL update overall completion percentage and recalculate estimated time remaining.
+5. WHEN the user clicks "Re-Evaluate Eligibility", THE ProgressTracker SHALL: (a) prompt the user to update their current financial inputs (income, debt, credit score), (b) re-run evaluateDecision with the updated inputs, (c) display the new Decision result, and (d) if the new Decision is `APPROVED` or `COUNTER_OFFER`, celebrate the progress with a visual success state and prompt to continue with the main loan application.
+6. THE ProgressTracker SHALL store all milestone completion state, updated financial inputs, and timestamp of last update in localStorage under key `pathToYesProgressState`, ensuring state survives page refreshes.
+7. THE ProgressTracker SHALL provide a "Start Over" button that clears all localStorage state (`pathToYesActivePlan` and `pathToYesProgressState`) and returns the user to the standard simulator view with default inputs.
+8. WHEN a user completes all milestones for their accepted product, THE ProgressTracker SHALL automatically enable the "Re-Evaluate Eligibility" button with a prominent visual indicator (e.g., pulsing animation, success badge) and display an encouragement message (e.g., "All milestones complete - Ready to re-apply!").
+9. THE ProgressTracker SHALL display a visual timeline or Gantt-style chart showing: milestones already completed (with completion dates), current milestone in progress, and future milestones with estimated completion dates based on product timeline.
+10. THE ProgressTracker dashboard SHALL be fully responsive and render correctly on mobile and desktop viewports, with milestone checklists and metric cards stacking vertically on small screens.
+
+---
+
+### Requirement 14: Borrower-Focused 5-Step Wizard Flow (UX Refinement)
+
+**User Story:** As a near-prime borrower exploring loan options, I want a guided step-by-step flow that starts with my loan needs and presents clear comparisons without overwhelming me with technical details, so that I can confidently evaluate my options and understand trade-offs before committing.
+
+#### Acceptance Criteria
+
+1. WHEN the Simulator first loads and no active Path to Yes plan exists in localStorage, THE Simulator SHALL display Step 1 (Loan Amount Selection) as the initial screen, replacing the previous all-inputs-visible default state.
+
+2. **Step 1: Loan Amount Selection**
+   - THE Simulator SHALL display a clean entry screen with the heading "How much would you like to borrow?" in large, friendly typography on a warm off-white canvas (stone-50 or equivalent neutral background).
+   - THE Simulator SHALL provide a loan amount slider or large number input accepting values from $2,000 to $25,000 in $500 increments, with the selected amount displayed prominently in large numerals (text-4xl or larger).
+   - THE Simulator SHALL display term options (12, 24, 36, 48, 60 months) as radio buttons or pill toggles beneath the amount selector, with 36 months selected by default.
+   - THE Simulator SHALL provide a "Continue" button as the primary full-width call-to-action in indigo (indigo-600), positioned at the bottom of the viewport on mobile.
+   - THE Simulator SHALL provide a secondary "View example scenarios" link that opens a modal or overlay displaying 2-3 common borrowing scenarios with typical amounts and purposes (e.g., "Debt consolidation: $12,000", "Home improvement: $8,000"), without navigating away from Step 1.
+   - THE Simulator SHALL NOT display credit score, income, debt, or any underwriting results on Step 1.
+
+3. **Step 2: Financial Details Input**
+   - WHEN the user clicks "Continue" on Step 1, THE Simulator SHALL transition to Step 2, displaying a single consolidated screen with three financial input fields: monthly income, monthly debt payments, and estimated credit score.
+   - THE Simulator SHALL keep the chosen loan amount and term visible in a compact summary card at the top of Step 2, labeled "Your loan request".
+   - THE Simulator SHALL format currency input fields with thousand separators and dollar signs (e.g., "$3,500" not "3500"), and SHALL provide inline help text beneath each field explaining what to include (e.g., "Include take-home pay from all jobs" for income).
+   - THE Simulator SHALL display a "Back" button to return to Step 1 and a "Continue" button to proceed to Step 3.
+   - THE Simulator SHALL validate that all three fields are non-empty and within acceptable ranges before enabling the "Continue" button, displaying inline validation messages for out-of-range values.
+
+4. **Step 3: Estimate Display (Primary Decision Screen)**
+   - WHEN the user clicks "Continue" on Step 2, THE Simulator SHALL run the underwriting engine and transition to Step 3, displaying the initial loan estimate.
+   - THE Simulator SHALL lead with the estimated monthly payment in large, bold numerals (text-5xl or larger) at the top of the screen, using near-black typography (slate-900 or equivalent) on the warm off-white canvas.
+   - THE Simulator SHALL display loan amount, term, and APR in a compact single-row summary directly beneath the payment number, using smaller type (text-base or text-sm) with minimal visual weight.
+   - WHEN the Decision is `COUNTER_OFFER` or `DECLINED`, THE Simulator SHALL display a single quiet status label (small pill badge in amber-100 or rose-100 background) with one plain-language reason (e.g., "Debt-to-income slightly high" or "Credit score below minimum"), positioned near the compact summary row, NOT as a large banner.
+   - WHEN the Decision is `APPROVED`, THE Simulator SHALL display a small success badge (emerald-100 background) with the text "Approved estimate" near the compact summary row.
+   - THE Simulator SHALL compute the single most favorable alternative (the Lever with `leverOutcome: APPROVED` that yields the highest loan amount, or the Lever with `leverOutcome: COUNTER_OFFER` that yields the lowest monthly payment if no APPROVED lever exists) and display a single comparison CTA button (e.g., "Compare a 36-month term" or "See a lower payment option") as the primary action on Step 3.
+   - THE Simulator SHALL NOT display multiple Lever cards or a checklist on Step 3; only the primary comparison CTA is shown.
+   - THE Simulator SHALL display "Edit details" and "Start over" as secondary text links, NOT prominent buttons.
+   - THE Simulator SHALL label the payment as a "Simulated estimate" in small footer text at the bottom of Step 3.
+
+5. **Step 4: Side-by-Side Comparison View**
+   - WHEN the user clicks the comparison CTA on Step 3, THE Simulator SHALL transition to Step 4, displaying a side-by-side comparison of "Your original estimate" and the suggested alternative in two compact columns (single column stack on mobile).
+   - EACH comparison column SHALL display: loan amount (if different), term, monthly payment (prominent), APR, and total cost over the life of the loan (term × payment).
+   - THE Simulator SHALL compute and display explicit trade-offs with dollar amounts: "Monthly savings: $XX" or "Pay $XXX more per month" AND "Total cost difference: $X,XXX less" or "$X,XXX more total interest" in a visually distinct trade-off summary row between or below the two columns.
+   - THE Simulator SHALL display a primary action button "Use [term] months" (e.g., "Use 36 months") that applies the alternative and returns to Step 3 with the updated inputs, re-running the underwriting engine.
+   - THE Simulator SHALL display "Keep original" and "Edit details" as secondary actions, allowing the user to return to Step 3 without changes or navigate back to Step 2.
+   - THE Simulator SHALL provide an "Undo" button on Step 3 after a comparison has been applied, allowing the user to revert to the previous inputs and re-enter Step 4.
+
+6. **Step 5: Summary (Post-Selection Confirmation)**
+   - WHEN the user has applied a comparison alternative or when the Decision is `APPROVED` and the user clicks a "Continue to summary" action, THE Simulator SHALL transition to Step 5, displaying a final summary screen.
+   - THE Simulator SHALL display the selected loan amount, term, estimated monthly payment, and APR in a clean vertical summary card.
+   - THE Simulator SHALL display a "What changed" section showing which inputs were adjusted from the original request (e.g., "Extended term from 24 to 36 months to lower monthly payment").
+   - THE Simulator SHALL label the entire summary as "Simulated estimate - not a final offer" in prominent disclaimer text.
+   - THE Simulator SHALL provide a primary "Start your application" button (if `APPROVED` or `COUNTER_OFFER`) or "Explore other options" button (if `DECLINED`), plus secondary "Edit details" and "Start over" links.
+
+7. **Visual Hierarchy and Design Standards**
+   - THE Simulator SHALL use a warm off-white canvas (stone-50 or equivalent) as the primary background color throughout all wizard steps, NOT white or gray-50.
+   - THE Simulator SHALL use near-black typography (slate-900 or equivalent) for all body text and headings, NOT gray-700 or lighter shades.
+   - THE Simulator SHALL use indigo (indigo-600) for all primary call-to-action buttons, with hover state indigo-700.
+   - THE Simulator SHALL reserve amber (amber-100 background, amber-800 text) for counter-offer status indicators and green (emerald-100 background, emerald-800 text) for approval indicators, using these colors only in small badges or pills, NOT in large banners.
+   - THE Simulator SHALL display large aligned numerals (text-4xl or larger) for loan amount on Step 1 and monthly payment on Step 3, using consistent font weight (font-bold) and alignment (text-center or text-left depending on layout).
+   - THE Simulator SHALL use short, plain-language headings (e.g., "How much would you like to borrow?" not "Applicant Profile"), with heading text no smaller than text-xl.
+   - THE Simulator SHALL make all primary CTA buttons full-width on mobile viewports (below 640px), with min-height 48px for accessible tap targets.
+   - THE Simulator SHALL remove nested borders, repeated icons, and duplicate values from all wizard screens; each piece of information SHALL appear exactly once per screen.
+   - THE Simulator SHALL keep the FRED benchmark rate indicator in a collapsible "Rate details" accordion or small info icon tooltip, NOT displayed prominently in the header or decision screens.
+
+8. **Navigation and State Management**
+   - THE Simulator SHALL maintain wizard step state in React component state (not localStorage), resetting to Step 1 when the user clicks "Start over" or when the page is refreshed.
+   - THE Simulator SHALL allow backward navigation from any step using a "Back" button, preserving previously entered inputs.
+   - THE Simulator SHALL allow forward navigation only when the current step's required inputs are valid and complete.
+   - THE Simulator SHALL allow the user to click "Edit details" from Step 3, 4, or 5 to return directly to Step 2, preserving all current inputs for editing.
+   - THE Simulator SHALL track comparison history in component state to enable "Undo" functionality after applying an alternative from Step 4.
+
+9. **Mobile-First Responsive Behavior**
+   - THE Simulator SHALL render all wizard steps in a single-column layout on mobile viewports (below 640px), with full-width inputs, buttons, and content cards.
+   - THE Simulator SHALL stack comparison columns vertically on mobile in Step 4, displaying "Your original estimate" above the suggested alternative.
+   - THE Simulator SHALL ensure all tap targets (buttons, radio buttons, links) meet the minimum 44×44px accessible size on mobile.
+   - THE Simulator SHALL use bottom-pinned primary action buttons on mobile (Step 1 "Continue", Step 3 comparison CTA, Step 4 "Use X months"), with adequate padding to avoid conflicts with browser chrome.
+   - THE Simulator SHALL render the wizard in a centered max-width container (max-w-2xl or max-w-3xl) on desktop viewports, maintaining readability without excessive line length.
+
+---
+
+### Requirement 15: Restore Multiple Levers and Cross-Sell Opportunities
+
+**User Story:** As a near-prime borrower who receives a Counter-Offer or Declined decision, I want to see ALL available path-to-approval options and relevant financial products I qualify for, so that I can make an informed choice rather than being shown only a single pre-selected alternative.
+
+#### Acceptance Criteria
+
+1. **Multiple Lever Display (Counter-Offer Enhancement)**
+   - WHEN the Decision is `COUNTER_OFFER` and the Solver returns multiple Levers, THE Simulator SHALL display ALL applicable Levers on Step 3 as individual option cards, not just the single most favorable alternative.
+   - EACH Lever option card SHALL display: Lever type and description (e.g., "Extend to 48 months"), resulting monthly payment in prominent numerals, resulting loan amount and term if changed, `leverOutcome` indicator ("Unlocks full approval" for `APPROVED`, "Moves to counter-offer" for `COUNTER_OFFER`), trade-off summary showing what changes (e.g., "+$1,200 total interest, -$62/month"), and a "Compare this option" button that navigates to Step 4 with that specific Lever pre-selected.
+   - THE Simulator SHALL visually distinguish the most favorable Lever (highest loan amount for `APPROVED` outcome, or lowest payment for `COUNTER_OFFER` outcome) using a subtle highlight (e.g., indigo-50 background or indigo-300 border), positioned first in the list.
+   - THE Simulator SHALL render Lever option cards in a vertical stack with space-y-4 or space-y-6 spacing on mobile, and MAY use a grid layout (grid-cols-2) on desktop viewports above 768px if space permits.
+   - THE Simulator SHALL use the same warm, clean visual style as Requirement 14: stone-50 canvas, slate-900 text, white card backgrounds with slate-200 borders, indigo-600 CTA buttons.
+
+2. **Lever Option Card Component Specification**
+   - THE LeverOptionCard component SHALL accept props: `lever: Lever`, `isRecommended: boolean` (true for the most favorable option), `onCompare: (lever: Lever) => void` callback.
+   - THE LeverOptionCard SHALL display the Lever description as a heading (text-lg font-semibold), the resulting monthly payment as prominent numerals (text-3xl or text-4xl font-bold), and the trade-off summary as secondary text (text-sm slate-600).
+   - WHEN `isRecommended` is true, THE LeverOptionCard SHALL apply a visual highlight (border-2 border-indigo-300 or bg-indigo-50) and display a small "Recommended" badge (text-xs indigo-600).
+   - THE LeverOptionCard SHALL render a full-width "Compare this option" button (bg-indigo-600 text-white rounded-md) that calls `onCompare(lever)` when clicked.
+   - THE LeverOptionCard SHALL display `leverOutcome` as a small status badge (emerald-100 for `APPROVED`, amber-100 for `COUNTER_OFFER`) with appropriate text color (emerald-800, amber-800).
+
+3. **Cross-Sell Integration for Declined Scenarios**
+   - WHEN the Decision is `DECLINED`, THE Simulator SHALL transition to a Declined Results screen (Step 3 or a dedicated declined view) that displays: a plain-English explanation of why the application was declined with exact metric values (e.g., "Your debt-to-income ratio is 48%, our maximum is 45%"), 1-3 product recommendation cards from the ProductMapper ranked by timeline to re-qualification, and secondary actions ("Edit details", "Start over").
+   - EACH product recommendation card SHALL display: product name and icon, qualification gap explanation (e.g., "Build credit history from 570 to 640"), estimated timeline to re-qualification (e.g., "6-9 months"), key product terms as bullet points (e.g., "$200 minimum deposit, 0% APR builder card"), and a primary CTA button ("Learn more" or "Start this plan") that opens a detailed product modal or transitions to the ProgressTracker flow.
+   - THE Simulator SHALL use the ProductMapper to compute recommendations, calling `computeProductRecommendations(engineResult, inputs)` and rendering the returned `ProductRecommendation[]` array.
+   - THE product recommendation cards SHALL use consistent visual styling with Lever option cards: white backgrounds, slate-200 borders, indigo-600 CTAs, text-lg headings, text-sm body text.
+
+4. **ConversionView Integration**
+   - THE ConversionView component (from Requirements 11 and 12) SHALL be integrated into the wizard flow as the primary declined state screen, replacing the previous simple declined banner.
+   - WHEN the Decision is `DECLINED`, THE ConversionView SHALL be rendered on Step 3 (or as a dedicated Step 5 for declined users) instead of the standard EstimateStep layout.
+   - THE ConversionView SHALL maintain the warm, approachable visual style from Requirement 14: stone-50 canvas, near-black typography (slate-900), indigo CTAs, and clean spacing (space-y-6 or space-y-8).
+   - THE ConversionView SHALL display the decline reason detail (DeclineReasonDetail component) in a compact card at the top (NOT a large banner), using rose-50 background and rose-800 text for severity without overwhelming the page.
+   - THE ConversionView SHALL render ProductOfferCard components (from Requirement 12) with updated styling to match the LeverOptionCard design: same card dimensions, same button styling, same typography scale.
+
+5. **User Flow and Navigation**
+   - WHEN a user clicks "Compare this option" on any Lever option card, THE Simulator SHALL navigate to Step 4 (ComparisonStep) with the selected Lever pre-loaded as the alternative, displaying the side-by-side comparison.
+   - WHEN a user clicks "Use [term]" on Step 4, THE Simulator SHALL apply the selected Lever's mutated inputs and return to Step 3, re-computing the Decision and displaying updated Lever options if the Decision is still `COUNTER_OFFER`.
+   - WHEN a user clicks "Learn more" or "Start this plan" on a product recommendation card, THE Simulator SHALL transition to the ProgressTracker flow (Requirement 13), storing the accepted product in localStorage and initializing milestone state.
+   - THE Simulator SHALL allow users to explore multiple Levers sequentially: compare Lever A, return to Step 3, compare Lever B, return to Step 3, etc., without losing previously viewed comparison history.
+
+6. **Empty State Handling**
+   - WHEN the Decision is `COUNTER_OFFER` but the Solver returns an empty Lever list (all Levers omitted), THE Simulator SHALL display a message on Step 3 indicating "No automatic adjustments available - try editing your income or debt details" with a prominent "Edit details" button.
+   - WHEN the Decision is `DECLINED` but the ProductMapper returns an empty recommendation list, THE Simulator SHALL display a constructive message (e.g., "We're unable to recommend alternative products at this time, but you can re-apply after improving your financial profile") with "Edit details" and "Start over" actions.
+
+7. **Visual Hierarchy and Information Density**
+   - THE Simulator SHALL maintain the clean, spacious layout principles from Requirement 14: large numerals for key values, single-column mobile layout, adequate whitespace (space-y-6 minimum between sections).
+   - THE Simulator SHALL avoid overwhelming the user with too many options: display at most 4 Lever option cards on Step 3, and at most 3 product recommendation cards on the declined screen.
+   - THE Simulator SHALL use progressive disclosure: display essential information (payment, term, outcome) in the card, with detailed trade-offs revealed on Step 4 comparison view.
+   - THE Simulator SHALL ensure all Lever option cards and product recommendation cards use consistent card styling: rounded-lg borders, shadow-sm elevation, p-6 internal padding, border-slate-200.
+
+8. **Testing and Validation**
+   - THE Simulator SHALL be verified by unit tests covering: rendering all Levers when multiple exist, rendering the recommended Lever with highlight styling, handling empty Lever lists gracefully, navigating to Step 4 with the correct selected Lever.
+   - THE ProductMapper SHALL be verified by unit tests covering: returning recommendations for each decline reason code, ranking recommendations by timeline, returning empty list when no products apply.
+   - THE ConversionView integration SHALL be verified by integration tests covering: rendering DeclineReasonDetail with exact metric values, rendering 1-3 ProductOfferCard components, transitioning to ProgressTracker when a product is accepted.

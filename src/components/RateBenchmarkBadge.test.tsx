@@ -38,7 +38,7 @@ describe('RateBenchmarkBadge', () => {
           );
           
           // Verify the component renders without throwing (getByText will throw if not found)
-          const rateElements = screen.getAllByText(/11.5% - Test Label/);
+          const rateElements = screen.getAllByText(/11\.50% - Test Label/);
           expect(rateElements.length).toBeGreaterThanOrEqual(1);
           
           // Clean up after each property iteration
@@ -59,7 +59,7 @@ describe('RateBenchmarkBadge', () => {
     );
 
     expect(screen.getByText('Live FRED Rate')).toBeInTheDocument();
-    expect(screen.getByText('11.5% - 2024-01')).toBeInTheDocument();
+    expect(screen.getByText('11.50% - 2024-01')).toBeInTheDocument();
   });
 
   it('renders CACHED source correctly', () => {
@@ -72,7 +72,7 @@ describe('RateBenchmarkBadge', () => {
     );
 
     expect(screen.getByText('Cached Benchmark')).toBeInTheDocument();
-    expect(screen.getByText('11.5% - 2024-01')).toBeInTheDocument();
+    expect(screen.getByText('11.50% - 2024-01')).toBeInTheDocument();
   });
 
   it('renders OFFLINE source correctly', () => {
@@ -85,7 +85,7 @@ describe('RateBenchmarkBadge', () => {
     );
 
     expect(screen.getByText('Offline Benchmark')).toBeInTheDocument();
-    expect(screen.getByText('11.5% - 2024-01')).toBeInTheDocument();
+    expect(screen.getByText('11.50% - 2024-01')).toBeInTheDocument();
   });
 
   it('displays different benchmark rates correctly', () => {
@@ -109,9 +109,9 @@ describe('RateBenchmarkBadge', () => {
         referenceLabel="Test"
       />,
     );
-    const liveBadge = screen.getByText('Live FRED Rate');
-    expect(liveBadge.className).toContain('bg-green-100');
-    expect(liveBadge.className).toContain('text-green-800');
+    const liveBadge = screen.getByText('Live FRED Rate').parentElement!;
+    expect(liveBadge.className).toContain('bg-emerald-50');
+    expect(liveBadge.className).toContain('text-emerald-800');
 
     // Test CACHED styling
     rerender(
@@ -121,8 +121,8 @@ describe('RateBenchmarkBadge', () => {
         referenceLabel="Test"
       />,
     );
-    const cachedBadge = screen.getByText('Cached Benchmark');
-    expect(cachedBadge.className).toContain('bg-blue-100');
+    const cachedBadge = screen.getByText('Cached Benchmark').parentElement!;
+    expect(cachedBadge.className).toContain('bg-blue-50');
     expect(cachedBadge.className).toContain('text-blue-800');
 
     // Test OFFLINE styling
@@ -133,8 +133,8 @@ describe('RateBenchmarkBadge', () => {
         referenceLabel="Test"
       />,
     );
-    const offlineBadge = screen.getByText('Offline Benchmark');
-    expect(offlineBadge.className).toContain('bg-gray-100');
-    expect(offlineBadge.className).toContain('text-gray-800');
+    const offlineBadge = screen.getByText('Offline Benchmark').parentElement!;
+    expect(offlineBadge.className).toContain('bg-slate-100');
+    expect(offlineBadge.className).toContain('text-slate-700');
   });
 });

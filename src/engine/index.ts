@@ -24,3 +24,9 @@ export {
   computePayDownDebtLever,
   computeCreditScoreMilestoneLever,
 } from './solver';
+
+// Functions from productMapper.ts
+export { computeProductRecommendations } from './productMapper';
+
+// Functions from milestones.ts
+export { getInitialMilestones } from './milestones';
