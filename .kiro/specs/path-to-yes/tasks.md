@@ -245,12 +245,12 @@ This implementation plan follows a requirements-first workflow. The engine modul
     - Catch all errors -> return offline result
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
 
-  - [-] 8.2 Implement cache helpers
+  - [x] 8.2 Implement cache helpers
     - readCachedRate: parse sessionStorage, validate value
     - offlineResult: return offline benchmark with reference label
     - _Requirements: 7.2, 7.3, 7.4, 7.5_
 
-  - [~] 8.3 Implement FRED client tests
+  - [x] 8.3 Implement FRED client tests
     - Test with valid API key and successful fetch
     - Test with valid API key and cache hit
     - Test with missing API key -> offline fallback
@@ -261,13 +261,13 @@ This implementation plan follows a requirements-first workflow. The engine modul
     - Verify cache preservation on error
     - _Requirements: 7.5, 7.11, 10.5_
 
-  - [~] 8.4 Write property test for RateBenchmarkBadge rendering
+  - [x] 8.4 Write property test for RateBenchmarkBadge rendering
     - **Property 10: RateBenchmarkBadge renders for all source states**
     - For all RateSource values (LIVE, CACHED, OFFLINE), RateBenchmarkBadge renders without exception
     - **Validates: Requirements 7.9**
 
-- [ ] 9. Implement components: RateBenchmarkBadge.tsx
-  - [~] 9.1 Implement RateBenchmarkBadge component
+- [x] 9. Implement components: RateBenchmarkBadge.tsx
+  - [x] 9.1 Implement RateBenchmarkBadge component
     - Display different content based on RateSource
     - LIVE: wifi icon + "Live FRED Rate"
     - CACHED: clock icon + "Cached Rate"
@@ -275,8 +275,8 @@ This implementation plan follows a requirements-first workflow. The engine modul
     - Display benchmarkRate in all cases
     - _Requirements: 7.6, 7.7, 7.8, 7.9_
 
-- [ ] 10. Implement components: ApplicantInputPanel.tsx
-  - [~] 10.1 Implement slider and input controls
+- [x] 10. Implement components: ApplicantInputPanel.tsx
+  - [x] 10.1 Implement slider and input controls
     - MonthlyIncome: slider $1,800-$25,000, step $100, numeric input
     - MonthlyDebt: slider $0-$15,000, step $50, numeric input
     - CreditScore: slider 500-850, step 5, numeric input
@@ -284,75 +284,75 @@ This implementation plan follows a requirements-first workflow. The engine modul
     - TermMonths: radio buttons or select for {12, 24, 36, 48, 60}
     - _Requirements: 1.1-1.5_
 
-  - [~] 10.2 Implement onChange handler
+  - [x] 10.2 Implement onChange handler
     - Update single field while preserving others
     - Call props.onChange with new ApplicantInputs
     - _Requirements: 1.6_
 
-- [ ] 11. Implement components: DecisionBanner.tsx
-  - [~] 11.1 Implement decision states
+- [x] 11. Implement components: DecisionBanner.tsx
+  - [x] 11.1 Implement decision states
     - APPROVED: checkmark, APR, estimatedPayment, termMonths
     - COUNTER_OFFER: amber status, reason code, best alternative terms
     - DECLINED: X icon, decline summary, "View Decline Reasons" button
     - Loading state: skeleton while computing
     - _Requirements: 8.1, 8.2, 8.3, 8.6_
 
-  - [~] 11.2 Implement adverse action trigger
+  - [x] 11.2 Implement adverse action trigger
     - Trigger props.onOpenAdverseModal on "View Decline Reasons" click
     - Only show button when Decision is DECLINED
     - _Requirements: 8.3, 8.5_
 
-  - [~] 11.3 Write component tests
+  - [x] 11.3 Write component tests
     - Test all three decision render states
     - Test loading state
     - Test error display for EngineError
     - _Requirements: 8.7_
 
-- [ ] 12. Implement components: PathToYesChecklist.tsx
-  - [~] 12.1 Implement checklist rendering
+- [x] 12. Implement components: PathToYesChecklist.tsx
+  - [x] 12.1 Implement checklist rendering
     - Render header: "PATH TO YES"
     - Map over solverResult.levers
     - Render LeverCard for each lever
     - Show empty state message when levers is empty
     - _Requirements: 6.6_
 
-  - [~] 12.2 Implement hidden state for APPROVED
+  - [x] 12.2 Implement hidden state for APPROVED
     - Return null when solverResult is null or levers is empty
     - When Decision is APPROVED, the entire checklist should be hidden
     - _Requirements: 6.6_
 
-  - [~] 12.3 Write component tests
+  - [x] 12.3 Write component tests
     - Test rendering with levers
     - Test empty state rendering
     - Test hidden state for APPROVED decision
     - _Requirements: 6.6_
 
-- [ ] 13. Implement components: LeverCard.tsx
-  - [~] 13.1 Implement card layout
+- [x] 13. Implement components: LeverCard.tsx
+  - [x] 13.1 Implement card layout
     - Display lever description (displayLabel)
     - Show resulting DTI and estimatedPayment
     - Display leverOutcome label with visual distinction
     - Provide "Apply This Fix" button
     - _Requirements: 6.5_
 
-  - [~] 13.2 Implement leverOutcome labels
+  - [x] 13.2 Implement leverOutcome labels
     - APPROVED outcome: "Unlocks Full Approval" (green badge)
     - COUNTER_OFFER outcome: "Moves to Counter-Offer" (amber badge)
     - _Requirements: 6.5_
 
-  - [~] 13.3 Implement click handler
+  - [x] 13.3 Implement click handler
     - Call props.onApplyFix(lever) on button click
     - _Requirements: 6.1, 6.2_
 
-- [ ] 14. Implement components: AdverseActionModal.tsx
-  - [~] 14.1 Implement modal structure
+- [x] 14. Implement components: AdverseActionModal.tsx
+  - [x] 14.1 Implement modal structure
     - Modal overlay and close button
     - Title: "WHY YOUR APPLICATION WAS DECLINED"
     - Reason codes display (plain English, no codes)
     - Levers section: display solverResult.levers
     - _Requirements: 8.4, 8.5_
 
-  - [~] 14.2 Implement reason code mapping
+  - [x] 14.2 Implement reason code mapping
     - HIGH_RISK_SCORE: "Your credit score is below the minimum required for this loan"
     - INSUFFICIENT_INCOME: "Your income does not meet the minimum threshold"
     - EXCESSIVE_DEBT: "Your existing debt obligations exceed your monthly income"
@@ -360,52 +360,52 @@ This implementation plan follows a requirements-first workflow. The engine modul
     - LOAN_CAP_EXCEEDED: "The requested amount exceeds the $15,000 limit for your credit tier"
     - _Requirements: 8.4_
 
-  - [~] 14.3 Write component tests
+  - [x] 14.3 Write component tests
     - Test modal rendering with all reason codes
     - Test lever display in modal
     - Test close button behavior
     - _Requirements: 8.4, 8.5_
 
-- [ ] 15. Implement App.tsx state and logic
-  - [~] 15.1 Implement state management
+- [x] 15. Implement App.tsx state and logic
+  - [x] 15.1 Implement state management
     - useState for inputs, benchmarkRate, rateSource, rateLabel
     - useState for adverseModalOpen
     - useState for current decision (optional optimization)
     - _Requirements: 1.6, 6.2, 7.10_
 
-  - [~] 15.2 Implement FRED fetch on mount
+  - [x] 15.2 Implement FRED fetch on mount
     - useEffect to fetch benchmark rate on initial render
     - Does NOT block initial render (initial rate is offline fallback)
     - Updates state when fetch completes or fails
     - Triggers useMemo recomputation via deps
     - _Requirements: 7.10, 7.11_
 
-  - [~] 15.3 Implement engine and solver recomputation
+  - [x] 15.3 Implement engine and solver recomputation
     - useMemo for engineResult with deps: inputs, benchmarkRate
     - useMemo for solverResult with deps: inputs, benchmarkRate, engineResult
     - SolverResult is null when Decision is APPROVED or engineError
     - _Requirements: 1.6, 6.2_
 
-  - [~] 15.4 Implement preset button handler
+  - [x] 15.4 Implement preset button handler
     - handleSelectPreset(preset) calls setInputs(preset.inputs)
     - Replaces all five fields atomically
     - Triggers single useMemo recomputation
     - _Requirements: 1.9_
 
-  - [~] 15.5 Implement apply-fix handler
+  - [x] 15.5 Implement apply-fix handler
     - handleApplyFix(lever) merges mutatedInputs into inputs
     - setInputs(prev => ({ ...prev, ...lever.mutatedInputs }))
     - Triggers engine and solver recomputation via useMemo
     - _Requirements: 6.1, 6.2, 6.3, 6.4_
 
-  - [~] 15.6 Write component integration tests
+  - [x] 15.6 Write component integration tests
     - Test preset button updates state correctly
     - Test apply-fix handler updates inputs and triggers recomputation
     - Test FRED fetch does not block initial render
     - _Requirements: 1.6, 6.2, 7.11_
 
-- [ ] 16. Wire components together in App.tsx
-  - [~] 16.1 Implement layout structure
+- [x] 16. Wire components together in App.tsx
+  - [x] 16.1 Implement layout structure
     - Header with title and RateBenchmarkBadge
     - Preset button strip
     - Two-column layout (inputs left, results right)
@@ -414,42 +414,42 @@ This implementation plan follows a requirements-first workflow. The engine modul
     - AdverseActionModal (controlled by adverseModalOpen)
     - _Requirements: 1.6, 6.6, 8.1, 8.3_
 
-  - [~] 16.2 Implement responsive design
+  - [x] 16.2 Implement responsive design
     - Mobile: stack inputs and results vertically
     - Desktop: two-column layout
     - Use Tailwind breakpoints
     - _Requirements: 1.6_
 
-  - [~] 16.3 Write end-to-end tests
+  - [x] 16.3 Write end-to-end tests
     - Test complete workflow: inputs -> decision -> levers
     - Test apply-fix flow
     - Test preset switching
     - _Requirements: 1.6, 6.2, 7.11_
 
-- [~] 17. Checkpoint - Ensure all tests pass
+- [x] 17. Checkpoint - Ensure all tests pass
   - Run all tests, verify requirements coverage, verify edge cases handled.
 
-- [ ] 18. Verification and cleanup
-  - [~] 18.1 Run all tests
+- [x] 18. Verification and cleanup
+  - [x] 18.1 Run all tests
     - Engine unit tests: verify boundary coverage
     - Engine property tests: verify 100+ iterations pass
     - Component tests: verify rendering and interaction
     - FRED client tests: verify all fallback scenarios
     - _Requirements: 10.3, 10.4, 10.5, 10.6, 10.7_
 
-  - [~] 18.2 Verify 100ms requirement
+  - [x] 18.2 Verify 100ms requirement
     - Profile evaluateDecision performance
     - Profile computeLevers performance
     - Confirm execution time < 100ms for all valid inputs
     - _Requirements: 1.6_
 
-  - [~] 18.3 Verify edge cases
+  - [x] 18.3 Verify edge cases
     - Test all boundary inputs from Requirement 9
     - Verify no NaN, Infinity, or null outputs
     - Verify no division-by-zero errors
     - _Requirements: 9.1-9.6_
 
-  - [~] 18.4 Run property tests for all properties
+  - [x] 18.4 Run property tests for all properties
     - Property 1: Determinism
     - Property 2: APR floor >= 6.99%
     - Property 3: APR 2-decimal precision
@@ -463,7 +463,7 @@ This implementation plan follows a requirements-first workflow. The engine modul
     - Property 11: Input range finiteness
     - **Validates: All design properties**
 
-  - [~] 18.5 Verify requirements coverage
+  - [x] 18.5 Verify requirements coverage
     - Map each requirement to implementation task
     - Confirm all acceptance criteria have corresponding tests
     - _Requirements: 1-10_

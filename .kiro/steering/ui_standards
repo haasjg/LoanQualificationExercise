@@ -1,0 +1,5 @@
+# UI & Design Standards
+- **Aesthetic:** Clean, flat, minimalist, geometric. Avoid heavy drop shadows, glassmorphism, or decorative gradients.
+- **Color Palette:** Neutral slate surfaces (`slate-50` page background, `white` cards, `slate-200` 1px borders). Use a single blue accent (`blue-600` / `blue-700`) strictly for primary actions and active states.
+- **Typography & Data:** Use clear size/weight contrast between headings and labels. Apply `tabular-nums` to all currency, percentages, and numeric metrics.
+- **Layout:** Prioritize single-column or clean 2-column asymmetric grids with generous padding (`p-6` minimum on cards). Never crowd more than 3 data points per card.
